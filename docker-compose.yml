@@ -3,10 +3,10 @@ version: '3'
 services:
    web:
     image: shugarev1974/check_order_api_catboost
-    command: bash -c  'python manage.py runserver 0.0.0.0:8010'
+    command: bash -c  'python manage.py runserver 0.0.0.0:8000'
     container_name: check_order_api_catboost
     volumes:
       - ./media:/code/media
     ports:
-      - "8010:8000"
+      - "8037:8000"
     restart: always

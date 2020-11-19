@@ -21,5 +21,4 @@ curl -i -X POST \
 		"phone_2_norm": "01"
 	}
 }' \
- 'http://127.0.0.1:8010/api/v2/check_order/'
- 
+ 'http://192.168.0.105:8037/api/v2/check_order/'
