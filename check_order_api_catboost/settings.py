@@ -35,7 +35,6 @@ compat.md_filter_add_syntax_highlight = lambda md: False
 # Application definition
 
 INSTALLED_APPS = [
-    # 'polls.apps.PollsConfig',# remove
     'django.contrib.admin',
     'django.contrib.auth',
     'django.contrib.contenttypes',
