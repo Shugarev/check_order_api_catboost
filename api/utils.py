@@ -6,6 +6,7 @@ from os import listdir
 from os.path import isfile, join
 from rest_framework.exceptions import ValidationError
 import joblib
+import importlib
 
 models = {}
 
@@ -18,6 +19,7 @@ def get_model_list():
     media_path = "{}/media/".format(BASE_DIR)
     onlyfiles = [f for f in listdir(media_path) if isfile(join(media_path, f)) and '.' not in f]
     return onlyfiles
+
 
 def get_cat_num_features_from_catboost(profile):
     cat_indexes = profile.get_cat_feature_indices()
@@ -32,44 +34,58 @@ def get_cat_num_features_from_catboost(profile):
     return feature_cat, feature_num
 
 
+def validate_profile_config(profile_config):
+    message = {}
+    validate = True
+    if profile_config.__class__ != dict:
+        message['profile_config'] = 'We expected profile_config  as ' \
+            'dict("profile": ... , "algorithm_name": ... , "factor_list": ...,"replaced_values": ...)'
+        validate = False
+    profile_conf_keys = profile_config.keys()
+    if profile_config.__class__ == dict:
+        if 'profile' not in profile_conf_keys or 'algorithm_name' not in profile_conf_keys or 'factor_list' not in\
+                profile_conf_keys or "replaced_values" not in profile_conf_keys:
+            message['obligatory_keys'] = ' We expected profile_config  as dict. Keys "profile, "algorithm_name", ' \
+                                         '"factor_list", "replaced_values" are obligatory.'
+            validate = False
+
+        if profile_config.get('algorithm_name') == 'catboost' and 'numeric_factors' not in profile_conf_keys:
+            message['catboost_obligatory_key'] = ' Key "numeric_factors" for catboost model is obligatory'
+            validate = False
+
+        if profile_config.get('algorithm_name') == 'torch' and 'scaler_params' not in profile_conf_keys:
+            message['torch_obligatory_key'] = ' Key "numeric_factors" for torch model is obligatory'
+            validate = False
+
+    if not validate:
+        raise ValidationError(message)
+
+
 def get_model(profile_name: str):
     if models.get(profile_name):
         return models[profile_name]
     profile_path = get_full_path(profile_name)
-    model = joblib.load(profile_path)
+    if 'torch' in profile_name:
+        torch_class_name = 'media.' + profile_name.replace("-", "_")
+        globals().update(importlib.import_module(torch_class_name).__dict__)
 
-    if 'cat' in profile_name:
-        encode = {}
-        if model.__class__ == dict:
-            if "profile" in model.keys() and str(model["profile"].__class__) == Params.CATBOOST_CLASS_NAME:
-                if "encode" in model.keys():
-                    encode = model.get('encode')
-                model = model["profile"]
+    profile_config = joblib.load(profile_path)
+    validate_profile_config(profile_config)
 
-        if str(model.__class__) != Params.CATBOOST_CLASS_NAME:
-            e = "We expected {} as {} or as dict('profile': {}, '_encode': '...')" . \
-                format(profile_name, Params.CATBOOST_CLASS_NAME, Params.CATBOOST_CLASS_NAME)
-            raise ValidationError(e)
+    models[profile_name] = profile_config
+    return profile_config
 
-        model._encode = encode
-        model._algorithm_name = 'catboost'
-        feature_cat, feature_num = get_cat_num_features_from_catboost(model)
-        model._factor_list = sorted(model.feature_names_)
-        model._feature_cat = feature_cat
-        model._feature_num = feature_num
-    models[profile_name] = model
-    return model
 
-def get_profile(request):
+def get_profile_config(request):
     config = request.data.get('config')
     profile_name = config.get('profile')
-    profile = get_model(profile_name)
-    return profile
+    profile_config = get_model(profile_name)
+    return profile_config
 
 
 def get_used_factor_list(request):
-    profile = get_profile(request)
-    return sorted(profile._factor_list)
+    profile_config = get_profile_config(request)
+    return sorted(profile_config.get('factor_list'))
 
 
 def prepare_order_data(order_data, used_factor: list) -> dict:
@@ -109,16 +125,13 @@ def validate_data(request):
                 validate = False
             else:
                 if data:
-                    profile = get_model(profile_name)
-                    used_factor_list = profile._factor_list
+                    profile_config = get_model(profile_name)
+                    used_factor_list = profile_config.get('factor_list')
                     diff_column = list(set(used_factor_list) - set(data.keys()))
                     if len(diff_column) > 0:
                         validate = False
                         message['data_error'] = 'Invalid data. {} is required. Algorithm {} expects factors list: {}'. \
-                            format(', '.join(diff_column), profile._algorithm_name, ', '.join(used_factor_list))
+                            format(', '.join(diff_column), profile_config.get('algorithm_name'), ', '.join(used_factor_list))
 
     return validate, message
 
-
-def replace_na(dataset: pd.DataFrame, replace_val=-9999) -> pd.DataFrame:
-    return dataset.fillna(replace_val)

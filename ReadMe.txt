@@ -17,7 +17,7 @@ python  manage.py test api
 - для поднятия сервиса выполнить docker-compose up
 - пример url по которому произовдится проверка ордреа,
 
-http://192.168.0.105:8037/api/v2/check_order/
+http://192.168.0.105:8037/api/v3/check_order/
 
 В docker compose можно задать порт по которому будет слушаться.
 
@@ -43,3 +43,34 @@ docker save -o /catboost-docker.tar shugarev1974/check_order_api_catboost
 sudo chown sergey:sergey catboost-docker.tar
 скопировать файл на сервер и распаковать образ.
 docker load -i catboost-docker.tar
+
+{"config": {"profile": "xgb_3-80-035_2021-01-26"},
+"data": {"amount": "158.85",
+"bin": "510932",
+"day_of_week": "2",
+"hour": "00",
+"bank_currency": "840",
+"is_city_resolved": "1",
+"latitude": "undef",
+"is_gender_undefined": "1",
+"longitude": "undef",
+"phone_2_norm": "20"}
+}
+probability: 0.24286704
+
+{"config": {"profile": "cat_3-75-015_seed_45_2021-01-26"},
+"data": {"amount": "158.85",
+"bank_currency": "840",
+"bin": "510932",
+"day_of_week": "2",
+"hour": "00",
+"is_city_resolved": "1",
+"is_gender_undefined": "1",
+"latitude": "undef",
+"longitude": "undef",
+"phone_2_norm": "20"}
+}
+probability: 0.02343293
+
+
+

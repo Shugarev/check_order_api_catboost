@@ -1,6 +1,6 @@
 #!/bin/bash
 
-api_name=shugarev1974/check_order_api_catboost
+api_name=shugarev1974/check_order_api_catboost_v3
 file_settings=./check_order_api_catboost/settings.py
 
 project_data=data_for_testing
