@@ -9,6 +9,9 @@ project_media=media
 tmp_data=../tmp-data_for_testing
 tmp_media=../tmp-media
 
+pytorch_models=pytorch_models.py
+init=__init__.py
+
 # заменить 'HOST': 'localhost'  на 'HOST': 'db'
 # sed -i "s/'HOST': 'localhost'/'HOST': 'db'/g" $file_settings
 
@@ -24,8 +27,12 @@ if [ -d ${tmp_media} ]; then rm -Rf ${tmp_media}; fi
 mkdir -p ${tmp_media}
 find ${project_media} -type f -print0 | xargs -0 mv -t ${tmp_media}
 
+# move pytorch_models.py and __init__.py to media folder
+mv ${tmp_media}/${pytorch_models} ${project_media}
+mv ${tmp_media}/${init} ${project_media}
+
 # удаление прдедидущего образа проекта
-#docker rmi ${api_name}
+docker rmi ${api_name}
 
 # создание нового образа из проекта
 docker build -t ${api_name} .

@@ -1,4 +1,5 @@
 import pandas as pd
+from api.utils import get_predict_torch, apply_scaler_to_column
 
 
 class DatasetTester:
@@ -17,8 +18,7 @@ class DatasetTester:
         test_modified = cls.get_modified_test(test, profile_config)
         if algorithm_name == 'catboost':
             return cls.test_dataset_by_catboost(test_modified, profile_config)
-
-        if algorithm_name == 'torch':
+        if algorithm_name == 'pytorch':
             return cls.test_dataset_by_torch(test_modified, profile_config)
 
         profile = profile_config['profile']
@@ -40,6 +40,8 @@ class DatasetTester:
                 replaced_na = encode_na.get(feature) or encode_na.get('default')
                 if replaced_na:
                     test.loc[:, feature] = test.loc[:, feature].fillna(replaced_na)
+            if algorithm_name == 'pytorch':
+                test.loc[:, feature] = apply_scaler_to_column(test[feature], feature, profile_config)
         return test
 
     @classmethod
@@ -50,5 +52,11 @@ class DatasetTester:
         return test_modified
 
     @classmethod
-    def test_dataset_by_torch(cls, test: pd.DataFrame, profile_config) -> pd.DataFrame:
-        pass
+    def test_dataset_by_torch(cls, test_modified: pd.DataFrame, profile_config) -> pd.DataFrame:
+        profile = profile_config['profile']
+        row = test_modified.values[0]
+
+        test_pred = get_predict_torch(row, profile)[0][0]
+        test_modified["probability"] = test_pred
+
+        return test_modified

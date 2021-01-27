@@ -1,12 +1,15 @@
 import pandas as pd
-from check_order_api_catboost.settings import BASE_DIR
-from evaluation.constants import Params
+import numpy as np
+
 import os
 from os import listdir
 from os.path import isfile, join
-from rest_framework.exceptions import ValidationError
+
 import joblib
-import importlib
+from torch import Tensor
+
+from rest_framework.exceptions import ValidationError
+from check_order_api_catboost.settings import BASE_DIR
 
 models = {}
 
@@ -65,10 +68,6 @@ def get_model(profile_name: str):
     if models.get(profile_name):
         return models[profile_name]
     profile_path = get_full_path(profile_name)
-    if 'torch' in profile_name:
-        torch_class_name = 'media.' + profile_name.replace("-", "_")
-        globals().update(importlib.import_module(torch_class_name).__dict__)
-
     profile_config = joblib.load(profile_path)
     validate_profile_config(profile_config)
 
@@ -135,3 +134,29 @@ def validate_data(request):
 
     return validate, message
 
+
+def get_predict_torch(row: np.array, model):
+    # convert row to data
+    row = Tensor([row])
+    # make prediction
+    yhat = model(row)
+    # retrieve numpy array
+    yhat = yhat.detach().numpy()
+    return yhat
+
+
+def apply_scaler_to_column(series_data: pd.Series, feature: str, profile_config: dict) -> pd.Series:
+    series_data = series_data.copy()
+    key_factor_min = feature + '_min'
+    key_factor_max = feature + '_max'
+
+    scaler_params = profile_config.get('scaler_params')
+
+    x_min = scaler_params[key_factor_min]
+    x_max = scaler_params[key_factor_max]
+
+    series_data = (series_data - x_min) / (x_max - x_min)
+    series_data = np.where(series_data > 1, 1, series_data)
+    series_data = np.where(series_data < 0, 0, series_data)
+
+    return series_data

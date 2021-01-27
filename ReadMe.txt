@@ -3,6 +3,8 @@ python manage.py runserver
 # save environment settings to file.
 pip freeze > requirements.txt
 
+Обновили версии пакетов на начало 2021 года.
+
 python  manage.py test api
 ------------------------------------------------------------------------------------------------------------
 открыть доступ для всех ip.
@@ -21,28 +23,33 @@ http://192.168.0.105:8037/api/v3/check_order/
 
 В docker compose можно задать порт по которому будет слушаться.
 
-Список поддерживаемых алгоритмов(вставляется в url вместо xgboost):
-    'catboost','adaboost', 'gausnb', 'decisiontree', 'gradientboost', 'logregression', 'linear_sgd','xgboost, lightgbm'
-
-Название 'catboost' модели должно начинаться с 'cat'
-
-Модель 'catboost' сохраняется двумя типами через joblib метод, по дефолту:"<class 'catboost.core.CatBoostClassifier'>"
-или как dictionary:{'profile': catboost.core.CatBoostClassifier, 'encode': encode_dict}
-В encode_dict - в полях передаем параметры, которые потом можем использовать для корректной работы модели,
-пример encode_dict
-{'longitude': 78, 'latitude':34} тогда значения na в соответствующих колонках будут заменятся на 78 и 34.
-Для совместимости 'django-sklearn-v2' и 'order-api-lignt', версии 'xgboost' и 'sklearn' оставили прежними.
-
-------------------------------------------------------------------------------------------------------------
-Для тестирования приложения на сервере по локальной запустить curl-api-catboost.sh
-Для тестирования приложения на сервере скрипт curl-api-catboost.sh нужно запускать под sudo
-
 Если мы не хотим пушить образ в докер репозиторий, то используем команды для сохранения и загрузки образа:
 docker save -o /catboost-docker.tar shugarev1974/check_order_api_catboost
+
 Для записи на сервер поменять пользователя:
 sudo chown sergey:sergey catboost-docker.tar
 скопировать файл на сервер и распаковать образ.
 docker load -i catboost-docker.tar
+
+Список поддерживаемых алгоритмов(вставляется в url вместо xgboost):
+    'catboost','adaboost', 'gausnb', 'decisiontree', 'gradientboost', 'logregression', 'linear_sgd','xgboost, lightgbm',
+    'pytorch'.
+
+Все модели сохраняется через joblib метод, как dictionary:
+conf_model = {'profile': model, 'algorithm_name': 'pytorch', 'factor_list': COL_FACTORS,
+'replaced_values': replaced_values, 'scaler_params': scaler_params}
+
+В 'replaced_values' - нужно передавать значение 'default', если оно отсутствует то в данных остаются поля с 'Na'.
+
+Для 'catboost' обязательно наличие поля 'numeric_features' в сохранненной модели.
+
+Для 'pytorch' обязательно поле 'scaler_params'.
+
+Для работы 'pytorch' нужно добавлять модель в файл pytorch_models.py. Пример модели в классе 'MLP'. Файл
+pytorch_models.py должен быть в папке 'media' докер-контейнера.
+-----------------------------------------------------------------------------------------------------------
+Для тестирования приложения на сервере по локальной запустить curl-api-catboost.sh
+Для тестирования приложения на сервере скрипт curl-api-catboost.sh нужно запускать под sudo
 
 {"config": {"profile": "xgb_3-80-035_2021-01-26"},
 "data": {"amount": "158.85",
@@ -72,5 +79,19 @@ probability: 0.24286704
 }
 probability: 0.02343293
 
-
-
+{"config": {"profile": "pytorch_30-09-001_2021-01-26"},
+"data": {
+"latitude": "undef",
+"bank_currency": "840",
+"bin": "510932",
+"count_months_to_end_card": "19",
+"day_of_week": "2",
+"hour": "00",
+"is_city_resolved": "1",
+"is_gender_undefined": "1",
+"longitude": "undef",
+"amount": "158.85",
+"phone_2_norm": "20"
+}
+}
+probability: 0.03023967519402504
