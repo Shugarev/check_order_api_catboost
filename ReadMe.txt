@@ -52,7 +52,8 @@ pytorch_models.py должен быть в папке 'media' докер-кон�
 Для тестирования приложения на сервере скрипт curl-api-catboost.sh нужно запускать под sudo
 
 {"config": {"profile": "xgb_3-80-035_2021-01-26"},
-"data": {"amount": "158.85",
+"data": {
+"amount": "158.85",
 "bin": "510932",
 "day_of_week": "2",
 "hour": "00",
@@ -61,12 +62,14 @@ pytorch_models.py должен быть в папке 'media' докер-кон�
 "latitude": "undef",
 "is_gender_undefined": "1",
 "longitude": "undef",
-"phone_2_norm": "20"}
+"phone_2_norm": "20"
+}
 }
 probability: 0.24286704
 
 {"config": {"profile": "cat_3-75-015_seed_45_2021-01-26"},
-"data": {"amount": "158.85",
+"data": {
+"amount": "158.85",
 "bank_currency": "840",
 "bin": "510932",
 "day_of_week": "2",
