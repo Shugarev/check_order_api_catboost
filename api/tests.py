@@ -270,7 +270,6 @@ class OrderTesting(TestCase):
                          'Probability in catboost response is incorrect.')
 
     def test_catboost_prob_3(self):
-        profile_config = get_model('cat_3-75-015_seed_45_2021-01-26')
         order = self.valid_cat_order.copy()
         order['data']['longitude'] = 'undef'
         response = self.create_web_order(order)
@@ -286,6 +285,35 @@ class OrderTesting(TestCase):
         response = self.create_web_order(self.valid_pytorch_order)
         self.assertEqual(response.status_code, status.HTTP_200_OK, 'Status-code in pytorch response is incorrect.')
 
+    def test_pytorch_profile_config_keys(self):
+        profile_config = get_model('pytorch_30-09-001_2021-01-26')
+        expected = {'scaler_params', 'replaced_values', 'factor_list', 'algorithm_name', 'profile'}
+        actually = set(profile_config.keys())
+        self.assertSetEqual(expected, actually,
+                         'Profile config for pytorch has incorrect keys. Expected: {}, actually: {}'.
+                            format(expected, actually))
+
+    def test_pytorch_profile_config_scaler(self):
+        profile_config = get_model('pytorch_30-09-001_2021-01-26')
+        scaler_params = profile_config.get('scaler_params')
+        expected = dict
+        self.assertEqual(scaler_params.__class__, expected,
+                         'We expected scaler_params as dict, actually: {}'.
+                            format(scaler_params.__class__))
+        expected_scaler = {f + k for f in profile_config.get('factor_list') for k in ('_min', '_max')}
+        actually_scaler = set(scaler_params.keys())
+        self.assertSetEqual(expected_scaler, actually_scaler,
+                         'Profile config for pytorch has incorrect scaller params. Expected: {}, Actually: {} '.
+                            format(expected, actually_scaler))
+
+
+    def test_pytorch_profile_config_scaler_values(self):
+        profile_config = get_model('pytorch_30-09-001_2021-01-26')
+        scaler_params = profile_config.get('scaler_params')
+        actually = all(k.__class__ in (float, int) for k in scaler_params.values())
+        expected = True
+        self.assertTrue(actually, 'We expect type of scaler_params values as float or int but it is not correct. '
+                                  'Scaler_params :{}'.format(scaler_params))
     @classmethod
     def tearDownClass(cls):
         cls.del_files('cat_3-75-015_seed_45_2021-01-26')
